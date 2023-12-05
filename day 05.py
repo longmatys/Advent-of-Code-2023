@@ -91,6 +91,7 @@ def find_dest_by_range(maps,id,delka,dst):
     
     return find_dest_by_range(maps,id,delka,maps['trans'][dst])
 def find_dest(maps,id,src,dst):
+    print(id,src,dst)
     (last_id,last_len) = (0,0)
     new_id = None
     for id_candidate in sorted(maps[dst].keys()):
@@ -156,6 +157,7 @@ def main():
     lowest = None
     for seed in maps['seeds']:
         result = find_dest(maps,seed,'seeds',maps['trans']['seed'])
+        print(result)
         if not lowest or (result < lowest):
             lowest = result
     print('Part 1:',lowest)
