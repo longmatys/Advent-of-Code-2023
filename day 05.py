@@ -17,7 +17,7 @@ def get_intersect_left(id_a,len_a,id_b,len_b):
     
 def find_dest_by_range(maps,id,delka,dst):
     #rid ... (id,len)
-    print(f'Trying {id}, {delka}, {dst}')
+    #print(f'Trying {id}, {delka}, {dst}')
     if dst == 'END':
         return id
     if delka < 0:
