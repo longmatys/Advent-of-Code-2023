@@ -1,11 +1,12 @@
 import os
 import math
 def najdi_pocet_moznych_reseni(cas, vzdalenost):
-    
+    #Slo by to resit jako kvadraticka rovnice a bylo by to hnedka
     counter = 0
     for cas_pokusu in range(1,cas+1):
         cas_jizdy = (vzdalenost / cas_pokusu)
         if cas_jizdy + cas_pokusu < cas:
+            print(f'candidate: {cas_pokusu}')
             counter+=1
     return counter
 if __name__ == '__main__':
@@ -37,4 +38,4 @@ if __name__ == '__main__':
         print(f'Pocet kombinaci vitezstvi pro cas={cas} a vzdalenost={vzdalenost} je {vysledek}')
         celkovy_vysledek *= vysledek
     print(f'Celkova vaha kombinaci pro cast 1 je {celkovy_vysledek}') 
-    print(f"Celkova vaha kombinaci pro cast 2 je {najdi_pocet_moznych_reseni(int(vstupni_data['Time']['spojeni']),int(vstupni_data['Distance']['spojeni']))}") 
+    #print(f"Celkova vaha kombinaci pro cast 2 je {najdi_pocet_moznych_reseni(int(vstupni_data['Time']['spojeni']),int(vstupni_data['Distance']['spojeni']))}") 

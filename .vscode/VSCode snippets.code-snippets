@@ -20,14 +20,19 @@
 		"prefix": "init",
 		"body": [
 			"import os",
-			"if __name__ == '__main__':",
+			"def main():",
 			"# Get the name of the Python script",
 			"    script_name = os.path.basename(__file__)",
 			"    input_file = script_name.split('.')[0]+'.input.txt'",
 			"    with open(input_file) as f:",
 			"        for line in f.readlines():",
 			"            line = line.strip()",
-			"            print(line)"
+			"            if line == '#':",
+			"                break",
+			"            print(line)",
+			"if __name__ == '__main__':",
+			"    main()",
+			
 
 		],
 		"description": "Init code for advent of code"
