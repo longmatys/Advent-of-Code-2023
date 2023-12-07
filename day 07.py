@@ -1,6 +1,6 @@
 import os
 import logging
-vsechny_karty = ''.join(['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'])
+vsechny_karty = ''.join(['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J'])
 def hodnota_karty(karta):
     return len(vsechny_karty) - vsechny_karty.find(karta)
 def spocitej_karty(balik):
@@ -13,10 +13,21 @@ def spocitej_karty(balik):
 varianty_baliku = ['Five of a kind', 'Four of a kind', 'Full house','Three of a kind','Two pair','One pair','High card']
 def sila_baliku(balik):
     return len(varianty_baliku) - varianty_baliku.index(balik)
-def vyhodnot_balik(balik):
-    balik_spocitany = spocitej_karty(balik)
+
+def vyhodnot_balik(balik, jokers=False):
+    if jokers:
+        balik_local = balik.replace('J','')
+        if balik_local == '':
+            balik_local = 'J'
+        balik_spocitany = spocitej_karty(balik_local)
+        balik_spocitany_serazeny = sorted([list(x) for x in balik_spocitany.items()],key=lambda x: (x[1],x[0]), reverse=True)
+        for i in range(len(balik)-len(balik_local)):
+            balik_spocitany_serazeny[0][1]+=1
+    else:
+        balik_spocitany = spocitej_karty(balik)
+        balik_spocitany_serazeny = sorted(balik_spocitany.items(),key=lambda x: (x[1],x[0]), reverse=True)
     karty_unikatni = len(balik_spocitany.keys())
-    balik_spocitany_serazeny = sorted(balik_spocitany.items(),key=lambda x: (x[1],x[0]), reverse=True)
+    
     if karty_unikatni == 1:
         return ['Five of a kind', balik_spocitany_serazeny[0]]
     if balik_spocitany_serazeny[0][1] == 4:
@@ -53,7 +64,7 @@ def main():
                 break
             logging.debug(line)
             
-            ret = vyhodnot_balik(line.split(' ')[0])
+            ret = vyhodnot_balik(line.split(' ')[0],True)
             zaznam = [line.split(' ')[0], ret[0], int(line.split(' ')[1])]
             #zaznam = [sorted(line.split(' ')[0],reverse=True,key=lambda x: hodnota_karty(x)), ret[0], int(line.split(' ')[1])]
             #ty karty se NERADI!
