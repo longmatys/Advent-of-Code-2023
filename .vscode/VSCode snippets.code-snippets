@@ -20,8 +20,10 @@
 		"prefix": "init",
 		"body": [
 			"import os",
+			"import logging"
 			"def main():",
 			"# Get the name of the Python script",
+			"    logging.basicConfig(level=logging.DEBUG, format='%(funcName)s (%(lineno)d): %(message)s')"
 			"    script_name = os.path.basename(__file__)",
 			"    input_file = script_name.split('.')[0]+'.input.txt'",
 			"    with open(input_file) as f:",
