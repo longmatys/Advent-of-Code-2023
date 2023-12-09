@@ -14,7 +14,7 @@ def reduce_line(line:list) -> list:
 
 def main():
 # Get the name of the Python script
-    logging.basicConfig(level=logging.DEBUG, format='%(funcName)s (%(lineno)d): %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(funcName)s (%(lineno)d): %(message)s')
     script_name = os.path.basename(__file__)
     input_file = script_name.split('.')[0]+'.input.txt'
     vysledek = [0,0]
@@ -26,11 +26,11 @@ def main():
             logging.debug(line)
             mezivysledek = reduce_line([int(cislo) for cislo in line.split(' ')])
             
-            print(line, f'Meziysledek= {mezivysledek}')
+            logging.debug(line, f'Meziysledek= {mezivysledek}')
             vysledek = [vysledek[i]+v for i,v in enumerate(mezivysledek)]
             
             
-        print(line, f'Vysledek= {vysledek}')
+        print(f'Vysledek[Part1, Part2]= {vysledek}')
         #1904165829 too high
         #1904165718
 if __name__ == '__main__':
