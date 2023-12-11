@@ -20,6 +20,9 @@ def expand_universe_usporne(mapa):
     return (radky,sloupce)
 def najdi_galaxie(mapa):
     indexes = []
+    #print([(i,j) for i in range(5) for j in range(6)])
+    #indices = [(i, j) for i, row in enumerate(my_array) for j, val in enumerate(row) if val == element_to_search]
+
     for i,line in enumerate(mapa):
         indexes += [(i,index) for index, value in enumerate(line) if value == '#']
     return indexes
