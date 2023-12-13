@@ -7,6 +7,7 @@ import collections
 import copy
 import sys
 import concurrent.futures
+from line_profiler import LineProfiler
 def kyble(kyble_fronta:collections.deque, pocty_fronta:collections.deque,indent=0):
     #kyble_fronta_orig = copy.deepcopy(kyble_fronta)
     #pocty_fronta_orig = copy.deepcopy(pocty_fronta)
@@ -17,30 +18,30 @@ def kyble(kyble_fronta:collections.deque, pocty_fronta:collections.deque,indent=
             return 1
         else:
             return 0
-    elif len(kyble_fronta) == 0:
+    elif not kyble_fronta:
         return 0
         
     ret_value = 0
     pocet = pocty_fronta.popleft()
-    i = 0
-    while len(''.join(kyble_fronta)) > 0 and len(''.join(kyble_fronta)) >= sum(pocty_fronta) + pocet:
+    
+    
+    while kyble_fronta :
         #print('  '*indent + f'Iteruji({i}) nad kybly {kyble_fronta}, {pocty_fronta}, {pocet}\t{indent}')
         kybl = kyble_fronta.popleft()
         
-        j = 0
+        
         while pocet <= len(kybl):
             kyble_fronta_copy = copy.copy(kyble_fronta)
             pocty_fronta_copy = copy.copy(pocty_fronta)
             if len(kybl) > pocet+1:
                 kyble_fronta_copy.appendleft(kybl[pocet+1:])
             if len(kybl) > pocet and kybl[pocet]!='#' or len(kybl) == pocet:
-                #print('  '*indent + f'Volam({i},{j}/{pocet},{kybl}), ret_value={ret_value}, {kyble_fronta_copy}, {pocty_fronta_copy} \t{indent}')
+                #print('  '*indent + f'Volam({pocet},{kybl}), ret_value={ret_value}, {kyble_fronta_copy}, {pocty_fronta_copy} \t{indent}')
                 ret_value += kyble(kyble_fronta_copy,pocty_fronta_copy,indent+1)
             if kybl[0] == '#':
                 break
             kybl = kybl[1:]
-            j+=1
-        i += 1        
+            
         
     #print('  '*indent + f'ret_value: {ret_value} ({kyble_fronta_orig,pocty_fronta_orig})')
     return ret_value
@@ -111,7 +112,20 @@ def zkus_radku(radka: str, extended:int = 1):
 #kyblikova_metoda('.??..??...?##.?.??..??...?##.?.??..??...?##.?.??..??...?##.?.??..??...?##. 1,1,3,1,1,3,1,1,3,1,1,3,1,1,3')
 #sys.exit(1)
 #kyblikova_metoda(rozsir_radek('?????.#...#... 4,1,1',1))
-#kyblikova_metoda(rozsir_radek('????.######..#####. 1,6,5',5))
+
+
+radka = '???.???#????.???? 1,5,2,1'
+#radka = '????.#...#... 4,1,1'
+
+kyblikova_metoda(rozsir_radek(radka,2), radka)
+profiler = LineProfiler()
+profiler.add_function(kyble)   # add additional function to profile
+lp_wrapper = profiler(kyblikova_metoda)
+lp_wrapper(rozsir_radek(radka,2), radka)
+#profiler.disable()
+profiler.print_stats()
+#kyblikova_metoda(rozsir_radek('?????????.???..?#?? 7,1,1,3',5))
+sys.exit(1)
 
 
 
