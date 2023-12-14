@@ -8,10 +8,15 @@ import copy
 import sys
 import concurrent.futures
 from line_profiler import LineProfiler
-def kyble(kyble_fronta:collections.deque, pocty_fronta:collections.deque,indent=0):
+kyble_cache = {}
+def kyble(kyble_fronta:list, pocty_fronta:list,indent=0):
     #kyble_fronta_orig = copy.deepcopy(kyble_fronta)
     #pocty_fronta_orig = copy.deepcopy(pocty_fronta)
     #print('  '*indent + f'Zkousim kyble: {kyble_fronta}, {pocty_fronta}\t{indent}')
+    #global kyble_cache
+    #klic = ''.join(kyble_fronta) + 'X'+''.join([str(znak) for znak in pocty_fronta])
+    #if kyble_cache.get(klic):
+    #    return kyble_cache.get(klic)
     if len(pocty_fronta) == 0:
         if ''.join(kyble_fronta).find('#') == -1:
             #print('  '*indent + 'Zvedam hodnotu o 1')
@@ -22,38 +27,45 @@ def kyble(kyble_fronta:collections.deque, pocty_fronta:collections.deque,indent=
         return 0
         
     ret_value = 0
-    pocet = pocty_fronta.popleft()
+    pocet = pocty_fronta.pop()
     
     
     while kyble_fronta :
         #print('  '*indent + f'Iteruji({i}) nad kybly {kyble_fronta}, {pocty_fronta}, {pocet}\t{indent}')
-        kybl = kyble_fronta.popleft()
+        kybl = kyble_fronta.pop()
+        
         
         
         while pocet <= len(kybl):
-            kyble_fronta_copy = copy.copy(kyble_fronta)
-            pocty_fronta_copy = copy.copy(pocty_fronta)
+            #kyble_fronta_copy = copy.copy(kyble_fronta)
+            kyble_fronta_copy = kyble_fronta.copy()
+            #pocty_fronta_copy = copy.copy(pocty_fronta)
+            #pocty_fronta_copy = pocty_fronta
             if len(kybl) > pocet+1:
-                kyble_fronta_copy.appendleft(kybl[pocet+1:])
+                kyble_fronta_copy.append(kybl[pocet+1:])
             if len(kybl) > pocet and kybl[pocet]!='#' or len(kybl) == pocet:
                 #print('  '*indent + f'Volam({pocet},{kybl}), ret_value={ret_value}, {kyble_fronta_copy}, {pocty_fronta_copy} \t{indent}')
-                ret_value += kyble(kyble_fronta_copy,pocty_fronta_copy,indent+1)
+                ret_value += kyble(kyble_fronta_copy,pocty_fronta,indent+1)
             if kybl[0] == '#':
                 break
             kybl = kybl[1:]
+    pocty_fronta.append(pocet)
             
         
     #print('  '*indent + f'ret_value: {ret_value} ({kyble_fronta_orig,pocty_fronta_orig})')
+    #kyble_cache[klic] = ret_value
     return ret_value
-
+#def plnici_metoda
 def kyblikova_metoda(radka:str, orig:str):
     start_time = time.time()
             
     print('zkousim kyblikova',orig)
     zadani = list(radka.split(' ')[0])
-    pocty_fronta = collections.deque([int(pocet) for pocet in radka.split(' ')[1].split(',')])
+    pocty_fronta = [int(pocet) for pocet in radka.split(' ')[1].split(',')]
+    pocty_fronta.reverse()
     zadani_unif = re.sub('[\\.]','_',''.join(zadani))
-    kyble_fronta = collections.deque([k for k in re.sub('(_)\\1+','\\1',zadani_unif).split('_') if k!=''])
+    kyble_fronta = [k for k in re.sub('(_)\\1+','\\1',zadani_unif).split('_') if k!='']
+    kyble_fronta.reverse()
     ret_value = kyble(kyble_fronta,pocty_fronta)
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -125,7 +137,7 @@ lp_wrapper(rozsir_radek(radka,2), radka)
 #profiler.disable()
 profiler.print_stats()
 #kyblikova_metoda(rozsir_radek('?????????.???..?#?? 7,1,1,3',5))
-sys.exit(1)
+#sys.exit(1)
 
 
 
@@ -139,21 +151,11 @@ def main():
     pocitadlo2 = 0
     
     with open(input_file) as f:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
-    # Map your function to the data
-            results = list(executor.map(kyblikova_metoda_mp, f.readlines()))
-        #for i,line in enumerate(f.readlines()):
-        #    line = line.strip()
-        #    if line == '#':
-        #        break
-            #logging.debug(line)
-            #pocitadlo += kyblikova_metoda(line)
-            #start_time = time.time()
-            #pocitadlo2 += kyblikova_metoda(rozsir_radek(line,5))
-            #pocitadlo2 += zkus_radku_metoda2(rozsir_radek(line,5))
-            #end_time = time.time()
-            #elapsed_time = end_time - start_time
-            #logging.debug(f'Zkusil jsem zadani {i+1}:{line} a pocitadla jsou ({pocitadlo}/{pocitadlo2}). Ubehlo {elapsed_time}s')
+        #with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+        #    results = list(executor.map(kyblikova_metoda_mp, f.readlines()))
+        for line in f.readlines():
+            kyblikova_metoda_mp(line)
+        
     print(results)
     print(sum(results))
     print(f'Part1: {pocitadlo}')
