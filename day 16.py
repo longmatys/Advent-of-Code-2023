@@ -126,7 +126,28 @@ def zpracuj_mapu(mapa):
     vysledek_part1 = 0
     for line in mapa_navstiveni:
         vysledek_part1 += line.count('#')
-    return (vysledek_part1,None)
+    vysledek_part2 = 0
+    for (range_x,range_y,direction) in [(range(1), range(len(mapa[0])),(-1,None)), 
+                  (range(len(mapa)-1, len(mapa)), range(len(mapa[0])),(1,None)),
+                  (range(len(mapa)), range(1),(None,-1)),
+                  (range(len(mapa)), range(len(mapa[0])-1,len(mapa[0])),(None,1))
+                  ]:
+        for x in range_x:
+            for y in range_y:
+                point_actual = [x,y]
+                if direction[0]:
+                    point_from = [x+direction[0],y]
+                else:
+                    point_from = [x,y+direction[1]]
+                
+                mapa_navstiveni = [['.'] * len(mapa[0]) for _ in range(len(mapa))]
+                walk_it(mapa,mapa_navstiveni,point_actual,point_from)
+                vysledek_candidate = 0
+                for line in mapa_navstiveni:
+                    vysledek_candidate += line.count('#')
+                if vysledek_candidate > vysledek_part2:
+                    vysledek_part2 = vysledek_candidate
+    return (vysledek_part1,vysledek_part2)
 def main():
 # Get the name of the Python script
     logging.basicConfig(level=logging.DEBUG, format='%(funcName)s (%(lineno)d): %(message)s')
@@ -144,5 +165,7 @@ def main():
     #tiskni_mapu(mapa_navstiveni)
     
     print(f'Vysledek Part 1: {vysledek_part1}')
+    print(f'Vysledek Part 2: {vysledek_part2}')
+    #7034 is too low
 if __name__ == '__main__':
     main()
