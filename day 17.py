@@ -25,9 +25,9 @@ mapa_stran = {
 mapa_kroku = {
     
     mapa_stran['north']['from']: [{'to': mapa_stran['south']['to']}, {'to': mapa_stran['east']['to']},{'to': mapa_stran['west']['to']}],
-    mapa_stran['south']['from']: [{'to': mapa_stran['east']['to']}, {'to': mapa_stran['north']['to']},{'to': mapa_stran['west']['to']}],
-    mapa_stran['east']['from']: [{'to': mapa_stran['south']['to']}, {'to': mapa_stran['north']['to']},{'to': mapa_stran['west']['to']}],
-    mapa_stran['west']['from']: [{'to': mapa_stran['south']['to']}, {'to': mapa_stran['east']['to']},{'to': mapa_stran['north']['to']}]
+    mapa_stran['south']['from']: [{'to': mapa_stran['north']['to']}, {'to': mapa_stran['east']['to']},{'to': mapa_stran['west']['to']}],
+    mapa_stran['east']['from']: [{'to': mapa_stran['north']['to']}, {'to': mapa_stran['south']['to']},{'to': mapa_stran['west']['to']}],
+    mapa_stran['west']['from']: [{'to': mapa_stran['north']['to']}, {'to': mapa_stran['south']['to']},{'to': mapa_stran['east']['to']}]
 }
 def vypocitej_coord(mapa,point_from,offset_to):
     new_point =  (point_from[0]+offset_to[0],point_from[1]+offset_to[1])
@@ -36,28 +36,25 @@ def vypocitej_coord(mapa,point_from,offset_to):
     return new_point
 def vypocitej_smer(point_from,point_to):
     return (point_to[0]-point_from[0], point_to[1]-point_from[1])
-MAX_DELKA = 3
+MAX_DELKA = 10
+MIN_DELKA = 4
 def walk_it_s_while(mapa,point_actual,point_from, delka, hloubka = 0, cena_cesty=0):
     #vysledky = {point_actual:mapa[point_actual[0]][point_actual[1]]}
     global global_best
     zasobnik_cache = {}
-    zasobnik = []
-    zasobnik.append([tuple(point_actual),tuple(point_from),delka,cena_cesty,tuple([tuple(point_from)])])
+    zasobnik = set()
+    #zasobnik.add(tuple([tuple(point_actual),tuple(point_from),delka,cena_cesty,tuple([tuple(point_from)])]))
+    zasobnik.add(tuple([tuple(point_actual),tuple(point_from),delka,cena_cesty]))
     while zasobnik:
         #item = sorted(zasobnik,key=lambda x: x[3])[0]
-        (point_actual, point_from, delka, cena_cesty, cela_cesta) = zasobnik.pop()
+        #(point_actual, point_from, delka, cena_cesty, cela_cesta) = zasobnik.pop()
+        (point_actual, point_from, delka, cena_cesty) = zasobnik.pop()
         #zasobnik.remove(item)
         
         hodnota = mapa[point_actual[0]][point_actual[1]]
-        if global_best and global_best < cena_cesty + int(hodnota):
-            continue
-        
-        #print(f'Nasel jsem kandidata na cestu {cena_cesty + int(hodnota)}')
         if point_actual[0] == len(mapa)-1 and point_actual[1] == len(mapa[0])-1:
-            #print(f'Nasel jsem kandidata na nejlepsi cestu {cena_cesty + int(hodnota)}')
             if not global_best or global_best > cena_cesty + int(hodnota):
                 global_best = cena_cesty + int(hodnota)
-                
             continue
                 
                 
@@ -66,33 +63,59 @@ def walk_it_s_while(mapa,point_actual,point_from, delka, hloubka = 0, cena_cesty
         point_from_candidate = point_actual
         best_vysledek = None
         for smer_to in mapa_kroku[direction_from]:
-            #print(f"{' '*hloubka} {hloubka}:direction_from: {direction_from}, Smer_to: {smer_to}")    
+            #print(f"{' '*hloubka} {hloubka}:direction_from: {direction_from}, Smer_to: {smer_to['to']}, Delka: {delka}, {point_from} -> {point_actual}")    
             offset = 1
             if smer_to['to'] == direction_from:
                 if delka == MAX_DELKA:
                     continue
                 else:
                     offset += delka
+            else:
+                if delka < MIN_DELKA:
+                    continue
+                else:
+                    a= 1
+                
             
             point_actual_candidate = vypocitej_coord(mapa,point_actual,smer_to['to'])
             
             if point_actual_candidate: 
                 hodnota_candidate = int(mapa[point_actual_candidate[0]][point_actual_candidate[1]])
-                klic = tuple([point_actual_candidate,point_actual,offset])
-                if not zasobnik_cache.get(klic) or zasobnik_cache[klic][0] >= cena_cesty + hodnota_candidate:
+                #klic = tuple([point_actual_candidate,point_actual,offset])
+                try:
+                    cache_hodnota = zasobnik_cache[point_actual_candidate][point_actual][offset]
+                except KeyError:
+                    try:
+                        cache_hodnota = cena_cesty + hodnota_candidate + 1
+                        zasobnik_cache[point_actual_candidate][point_actual]
+                        zasobnik_cache[point_actual_candidate][point_actual][offset] = cache_hodnota
+                    except KeyError:
+                        try:
+                            zasobnik_cache[point_actual_candidate]
+                            zasobnik_cache[point_actual_candidate][point_actual] = {offset:cache_hodnota}
+                        except KeyError:
+                            zasobnik_cache[point_actual_candidate] = {point_actual:{offset:cache_hodnota}}
+                if cache_hodnota > cena_cesty + hodnota_candidate:
                     
-                    zasobnik.append([tuple(point_actual_candidate),tuple(point_from_candidate),offset,cena_cesty + hodnota_candidate,tuple(list(cela_cesta)+[tuple(point_actual)])])
-                    zasobnik_cache[klic] = [cena_cesty + hodnota_candidate, tuple(list(cela_cesta)+[tuple(point_actual)])]
+                    #zasobnik.add(tuple([tuple(point_actual_candidate),tuple(point_from_candidate),offset,cena_cesty + hodnota_candidate,tuple(list(cela_cesta)+[tuple(point_actual)])]))
+                    zasobnik.add(tuple([tuple(point_actual_candidate),tuple(point_from_candidate),offset,cena_cesty + hodnota_candidate]))
+                    #zasobnik_cache[klic] = [cena_cesty + hodnota_candidate, tuple(list(cela_cesta)+[tuple(point_actual)])]
+                    zasobnik_cache[point_actual_candidate][point_actual][offset] = cena_cesty + hodnota_candidate
                     #vysledek_candidate = walk_it_recursive(mapa,point_actual_candidate,point_from_candidate,offset,hloubka+1,cena_cesty+int(hodnota))
                     #if not best_vysledek or (vysledek_candidate and best_vysledek>vysledek_candidate):
                     #    best_vysledek = vysledek_candidate
                 #walk_cache[tuple([tuple(point_actual_candidate),tuple(point_from_candidate),offset])] = 0
         #print(f"{' '*hloubka} {hloubka}:vracim nejlepsi vysledek pro {point_actual}: {best_vysledek}")
     
+    vysledky = []
+    #print(zasobnik_cache.keys())
+    for k1,v1 in zasobnik_cache[tuple([len(mapa)-1, len(mapa[0])-1])].items():
+        for k2,v2 in v1.items():
+            if k2 >= MIN_DELKA:
+                vysledky.append(v2)
+    #z = min([v for k,v in zasobnik_cache.items() if k[0] == tuple([len(mapa)-1, len(mapa[0])-1])])
     
-    z = min([v[0] for k,v in zasobnik_cache.items() if k[0] == tuple([len(mapa)-1, len(mapa[0])-1])])
-    
-    return z
+    return min(vysledky)
 walk_cache = {}
 def update_cache(klic,hodnota):
     if walk_cache.get(klic):
