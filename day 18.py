@@ -2,6 +2,11 @@ import os
 import logging
 import collections
 import sys
+import copy
+import ordered_set
+import itertools
+import sortedcontainers 
+import alive_progress
 mapa_stran = {
     'south': {
         'from': (-1,0),
@@ -146,6 +151,88 @@ def nakresli_kroky(mapa:list,kroky:list,start_point):
                     nakresli_znak(mapa,point,'#')
         posledni_krok = krok
     return smerovani.most_common(2)[1][0]
+def vytvor_sloupce(kroky):
+    point = [0,0]
+    sloupce = {}
+    for krok in kroky:
+        match decode_krok(krok,0):
+            case 'R':
+                point[1]+=decode_krok(krok,1)
+                    
+            case 'L':
+                point[1]-=decode_krok(krok,1)
+            case 'D':
+                start = point[0]
+                point[0]+=decode_krok(krok,1)
+                if not sloupce.get(start):
+                    sloupce[start] = {}
+                sloupce[start][point[1]] = point[0]
+            case 'U':
+                start = point[0]
+                point[0]-=decode_krok(krok,1)
+                if not sloupce.get(point[0]):
+                    sloupce[point[0]] = {}
+                sloupce[point[0]][point[1]] = start
+    return sloupce
+def spocitej_sloupce(sloupce:dict, pocet_radek):
+    zacatek = min(sloupce.keys())
+    konec = max(sloupce.keys())
+    counter = zacatek
+    ret_value = 0
+    global DECODE_MODE
+    DECODE_MODE = 'Part2'
+    #Zasobnik ma v sobe cisla sloupcu 
+    
+    zasobnik = sortedcontainers.SortedSet()
+    zasobnik_cache = {}
+    for sloupec in sloupce[counter].keys():
+        zasobnik.add(sloupec)
+        zasobnik_cache[sloupec] = counter
+    with alive_progress.alive_bar(pocet_radek) as bar:
+
+        while zasobnik or counter < konec:
+            if counter % 100 == 0:
+                bar(100)
+            #print(f'Prochazim tento zasobnik: {zasobnik}')
+            vnitrek = True
+            hrana_counter = 0
+            for dvojice in itertools.pairwise(zasobnik):
+                #print(f'Zpracovavam {dvojice}')
+                #hrana - alespon jeden zacina nebo konci
+                
+                start_and_start = zasobnik_cache[dvojice[0]] == counter and zasobnik_cache[dvojice[1]] == counter
+                end_and_end = sloupce[zasobnik_cache[dvojice[0]]][dvojice[0]] == counter and sloupce[zasobnik_cache[dvojice[1]]][dvojice[1]] == counter
+                start_and_end = (sloupce[zasobnik_cache[dvojice[0]]][dvojice[0]] == counter and zasobnik_cache[dvojice[1]] == counter) or \
+                    (zasobnik_cache[dvojice[0]] == counter and sloupce[zasobnik_cache[dvojice[1]]][dvojice[1]] == counter)
+                if start_and_start or end_and_end or start_and_end:
+                    hrana_counter+=1
+                else:
+                    #Hrany musi jit za sebou, abych si na ne musel davat pozor - zuby _TT_TT_
+                    hrana_counter=0
+                if vnitrek or (hrana_counter%2 > 0 and (start_and_start  or end_and_end or start_and_end)):
+                    ret_value += (dvojice[1] - dvojice[0]) - 1
+                else:
+                    a=1
+                
+                
+                #Ten druhy nesmi konci, jinak je to hrana a jsem porad stejne
+                if  hrana_counter%2 > 0 and start_and_end:
+                    "" #Nic nedelam
+                else:
+                    vnitrek = not vnitrek
+                
+            #Ty, co konci, tak vyndam a zapoctu jejich vysku
+            for sloupec in [sloupec for sloupec in zasobnik if sloupce[zasobnik_cache[sloupec]][sloupec] == counter]:
+                zasobnik.discard(sloupec)
+                #Prictu vysku odstraneneho sloupce
+                ret_value += (sloupce[zasobnik_cache[sloupec]][sloupec] - zasobnik_cache[sloupec])+1
+            #na konci zvednu citac a pridam pripadne nove polozky
+            counter+=1
+            if sloupce.get(counter):
+                for sloupec in sloupce[counter].keys():
+                    zasobnik.add(sloupec)
+                    zasobnik_cache[sloupec] = counter
+    return ret_value 
 def main():
 # Get the name of the Python script
     logging.basicConfig(level=logging.DEBUG, format='%(funcName)s (%(lineno)d): %(message)s')
@@ -156,18 +243,30 @@ def main():
         for line in f.readlines():
             line = line.strip()
             kroky.append(line)
-    if DECODE_MODE == 'Part1':
+    if DECODE_MODE == 'Part1' and False:
         rohy = najdi_rohy(kroky)
         print(rohy,rohy[1][0]-rohy[0][0],'x', rohy[1][1]-rohy[0][1],f'Char: {sys.getsizeof(["."])}, Potrebuji: {(rohy[1][0]-rohy[0][0]) * (rohy[1][1]-rohy[0][1]) *sys.getsizeof(["."])/1024/1024/1024} GB pameti')
         mapa = [['.']*(abs(rohy[1][1]-rohy[0][1])+1) for _ in range((abs(rohy[1][0]-rohy[0][0]))+1)]
         
         vnitrni_symbol = nakresli_kroky(mapa,kroky, [-rohy[0][0],-rohy[0][1]])
         
-        #for line in mapa:
-        #    print(''.join(line))
+        for line in mapa:
+            print(''.join(line))
         flood_it(mapa,vnitrni_symbol)
         pocet = sum([line.count(vnitrni_symbol) for line in mapa])
         pocet += sum([line.count('#') for line in mapa])
         print(f'Pocet vykopanych mist: {pocet}')
+        counter = 0
+        for i,line in enumerate(mapa):
+            counter += line.count(vnitrni_symbol) + line.count("#")
+            print(f'{i}:{counter}')
+            
+    else:
+        rohy = najdi_rohy(kroky)
+        print('Jdu vytvorit sloupce')
+        sloupce = vytvor_sloupce(kroky)
+        print('Jdu spocitat vnitrni prostory')
+        pocet = spocitej_sloupce(sloupce,rohy[1][0]-rohy[0][0])
+        print(pocet)
 if __name__ == '__main__':
     main()
