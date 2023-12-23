@@ -120,7 +120,7 @@ def propoj_moduly(inventar_modulu:dict, zasobnik_instrukci:list, inventar_modulu
             vstup = vstup[1:]
         for vystup in vystupy.split(','):
             if not inventar_modulu_simple.get(vystup.strip()):
-                inventar_modulu_simple[vystup.strip()] = {'druh': '-', 'vstupy':{}, 'vystup': None, 'vystupy':[]}
+                inventar_modulu_simple[vystup.strip()] = {'druh': '-', 'vstupy':{}, 'vystup': None, 'vystupy':[], 'vstup':[]}
             if not inventar_modulu.get(vystup.strip()):
                 inventar_modulu[vystup.strip()] = class_module(jmeno=vystup.strip())
             inventar_modulu_simple[vstup.strip()]['vystupy'].append(vystup.strip())
@@ -128,6 +128,7 @@ def propoj_moduly(inventar_modulu:dict, zasobnik_instrukci:list, inventar_modulu
             inventar_modulu[vstup.strip()].zaregistruj_vystup(inventar_modulu[vystup.strip()])
             if inventar_modulu_simple[vystup.strip()]['druh'] == '&':
                 inventar_modulu_simple[vystup.strip()]['stav'][vstup.strip()] = PULZ_LOW
+            inventar_modulu_simple[vystup.strip()]['vstup'].append(vstup.strip())
     #print(inventar_modulu)
 def dump_hodiny(inventar_modulu:dict):
     for k,v in inventar_modulu.items():
@@ -188,6 +189,18 @@ def stiskni_tlacitko(inventar_modulu:dict, hodiny):
             ret_value += modul.proved_vystup(hodiny)
         pokracovat = ret_value
     return hodiny
+def analyze_frontu(inventar_modulu_simple,prvek,indent=0):
+    fronta = []
+    fronta.append(prvek)
+    while True:
+        nova_fronta = []
+        for vecicka in fronta:
+            print('-'*indent+ f'{vecicka}')
+            for vstup in inventar_modulu_simple[vecicka].get('vstup'):
+                nova_fronta.append(vstup)
+        indent+=1
+        fronta = nova_fronta
+    
 def main():
     inventar_modulu = {}
     inventar_modulu_simple = {}
@@ -204,16 +217,16 @@ def main():
                 break
             if line[0] == '%':
                 inventar_modulu[line[1:].split(' -> ')[0]] = flip_flop(jmeno=line[1:].split(' -> ')[0])
-                inventar_modulu_simple[line[1:].split(' -> ')[0]] = {'druh': line[0], 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[], 'stav': STAV_OFF}
+                inventar_modulu_simple[line[1:].split(' -> ')[0]] = {'druh': line[0], 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[], 'stav': STAV_OFF, 'vstup': []}
             elif line[0] == '&':
                 inventar_modulu[line[1:].split(' -> ')[0]] = conjunction(jmeno=line[1:].split(' -> ')[0])
-                inventar_modulu_simple[line[1:].split(' -> ')[0]] = {'druh': line[0], 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[], 'stav':{}}
+                inventar_modulu_simple[line[1:].split(' -> ')[0]] = {'druh': line[0], 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[], 'stav':{}, 'vstup': []}
             elif line.startswith('broadcaster'):
                 inventar_modulu['broadcaster'] = broadcaster(jmeno='broadcaster')
-                inventar_modulu_simple[line.split(' -> ')[0]] = {'druh': 'broadcaster', 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[]}
+                inventar_modulu_simple[line.split(' -> ')[0]] = {'druh': 'broadcaster', 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[], 'vstup': []}
             else:
                 inventar_modulu[line.split(' -> ')[0]] = class_module(jmeno=line.split(' -> ')[0])
-                inventar_modulu_simple[line.split(' -> ')[0]] = {'druh': None, 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[]}
+                inventar_modulu_simple[line.split(' -> ')[0]] = {'druh': None, 'vstupy':collections.deque(), 'vystup': None, 'vystupy':[], 'vstup': []}
             
             zasobnik_instrukci.append(line)
     propoj_moduly(inventar_modulu, zasobnik_instrukci, inventar_modulu_simple)
@@ -226,10 +239,10 @@ def main():
     
         #hodiny = stiskni_tlacitko(inventar_modulu,hodiny)
         (counter1,counter2) = stiskni_tlacitko_simple(inventar_modulu_simple)
-        vysledek1.update(counter1)
         vysledek2.update(counter2)
-    print(f'Celkove statistiky jsou {vysledek1} a to dava {vysledek1[True]*vysledek1[False]}')    
+    
     print(f'Celkove statistiky jsou {vysledek2} a to dava {vysledek2[True]*vysledek2[False]}')    
+    analyze_frontu(inventar_modulu_simple,'rx')
     return
     
     for jmeno, modul in dict(sorted(inventar_modulu.items())).items():
