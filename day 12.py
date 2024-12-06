@@ -10,7 +10,7 @@ import concurrent.futures
 from line_profiler import LineProfiler
 kyble_cache = {}
 def optimalizuj_retez_zleva(radka:str):
-    print('zkousim optimalizovat',radka)
+    #print('zkousim optimalizovat',radka)
     zadani = list(radka.split(' ')[0])
     pocty = collections.deque([int(pocet) for pocet in radka.split(' ')[1].split(',')])
     
@@ -66,44 +66,73 @@ def delete_nth(d:collections.deque, n:int):
     d.rotate(-n)
     d.popleft()
     d.rotate(n)
-def ziskej_povinne_varianty(kyble_fronta:list, kybliky_povinne_mrize:collections.deque, pocty_fronta:collections.deque):
-    return_value = None
-    for kyblik_povinny_index,kyblik_povinny in enumerate(kybliky_povinne_mrize):
-        if not kyblik_povinny:
+def ziskej_povinne_varianty(kyble_fronta:list, kybliky_povinne_mrize:collections.deque, pocty_fronta:collections.deque, 
+                            pocet_index_start = 0, kyblik_povinny_index_start = 0, kyblik_povinny_skupina_index_start =0,
+                            kyblik_povinny_offset_start=0, pocitadla_umisteni=None):
+    return_value = []
+    
+    for kyblik_povinny_index in range(kyblik_povinny_index_start,len(kybliky_povinne_mrize)):
+        if not kybliky_povinne_mrize[kyblik_povinny_index]:
             continue
-        print(f'Prochazim kyblik {kyblik_povinny_index}: {kyblik_povinny}')
-        if kyblik_povinny[0][1] == 0:
+        print(f'Prochazim kyblik {kyblik_povinny_index}: {kybliky_povinne_mrize[kyblik_povinny_index]}')
+        if kybliky_povinne_mrize[kyblik_povinny_index][0][1] == 0:
             #v tomto kyblu neni povinny znak, tak preskocit
-            ""
-        else:
-            umisteni = []
+            continue
             
-            for i,pocet in enumerate(pocty_fronta):
-                for kyblik_povinny_skupina_index,kyblik_povinny_skupina in enumerate(kyblik_povinny):
-                    if kyblik_povinny_skupina[1] > pocet:
-                        "do dane skupiny se nevejde, uz je to spatne reseni"
-                        break
-                    if kyblik_povinny_skupina[1] == pocet:
-                        "dana skupina je presne stejne dlouha, neni tam vic variant"
-                        kybliky_povinne_mrize_copy = copy.deepcopy(kybliky_povinne_mrize)
-                        pocty_fronta_copy = copy.deepcopy(pocty_fronta)
-                        #vyndam pocet, ktery jsem spotreboval
-                        print(f'Spotreboval jsem counter {pocet} a podskupinu {kyblik_povinny_skupina_index} ve skupine {kyblik_povinny_index} v {kybliky_povinne_mrize_copy[kyblik_povinny_index][kyblik_povinny_skupina_index]}')
-                        delete_nth(pocty_fronta_copy,i)
-                        delete_nth(kybliky_povinne_mrize_copy[kyblik_povinny_index],kyblik_povinny_skupina_index)
-                        ziskej_povinne_varianty(kyble_fronta, kybliky_povinne_mrize_copy,pocty_fronta_copy)
-                        #umisteni.append([i,kyblik_povinny_index,kyblik_povinny_skupina_index,False])
-                        
-                    else:
-                        "dana skupina je mensi, takze tam muze nastat nejaky offset"
-                        umisteni.append([i,kyblik_povinny_index,kyblik_povinny_skupina_index,True])
-                        kybliky_povinne_mrize_copy = copy.copy(kybliky_povinne_mrize)
-                        pocty_fronta_copy = copy.copy(pocty_fronta)
-                        #vyndam pocet, ktery jsem spotreboval - nejak vyresit offsety
-                        print(f'Spotreboval jsem counter {pocet} a podskupinu {kyblik_povinny_skupina_index} ve skupine {kyblik_povinny_index} v {kybliky_povinne_mrize_copy[kyblik_povinny_index][kyblik_povinny_skupina_index]}')
-                        delete_nth(pocty_fronta_copy,i)
-                        delete_nth(kybliky_povinne_mrize_copy[kyblik_povinny_index],kyblik_povinny_skupina_index)
-                        ziskej_povinne_varianty(kyble_fronta, kybliky_povinne_mrize_copy,pocty_fronta_copy)
+        
+            
+        pocet_index = pocet_index_start
+        #Tahle podminka je asi zbytecna        
+        while pocet_index <= len(pocty_fronta):
+            #Musim zkontrolovat, zda se ten pocet vejde smerem doprava:
+            # - muze byt konec cele skupiny !
+            # - muze to pretekat do dalsi skupiny
+            # - - pak ale nesmi koncit uprostred povinne podskupiny, to by zpusobilo kolizi # a .
+            
+            #iteruji pres kybliky, pokracuju od posledniho spotrebovaneho
+            for kyblik_povinny_skupina_index in range(kyblik_povinny_skupina_index_start,len(kybliky_povinne_mrize[kyblik_povinny_index])):
+                
+                if kybliky_povinne_mrize[kyblik_povinny_index][kyblik_povinny_skupina_index][1] > pocty_fronta[pocet_index]:
+                    "do dane skupiny se nevejde (ma to moc mrizi), uz je to spatne reseni"
+                    break
+                if pocty_fronta[pocet_index] +kyblik_povinny_offset_start > len(kyble_fronta[kyblik_povinny_index]):
+                    "od tehle pozice se uz tenhle counter nevejde az do konce"
+                
+                "dana skupina je mensi ci rovna, takze tam muze nastat nejaky offset"
+                
+                #!! Musim ohlidat i delku od zacatku, pripadne od konce minule skupiny
+                #!! Pripadne jestli to nejde pres vice skupin
+                #Nejdriv offset zalozeny na poctu mrizi a velikosti cisla
+                #offset
+                for offset in range(
+                    min([
+                        pocty_fronta[pocet_index]-kybliky_povinne_mrize[kyblik_povinny_index][kyblik_povinny_skupina_index][1]+1, #tohle je pokud bych nebyl omezen zleva nicim
+                        kybliky_povinne_mrize[kyblik_povinny_index][kyblik_povinny_skupina_index][0] - kyblik_povinny_offset_start #Tohle je pokud jsem omezen predchozim vyberem
+                    ])):
+                    #kolik mi zbyva usadit mimo soucasnou povinnou skupinu
+                    zbyva_usadit_z_poctu = pocty_fronta[pocet_index] - offset - kybliky_povinne_mrize[kyblik_povinny_index][kyblik_povinny_skupina_index][0]
+                    #kolik skupin jsem spotreboval, zacinam soucasnou
+                    kyblik_povinny_skupina_spotrebovano = 1
+                    for kyblik_povinny_skupina_overflow_index in range(kyblik_povinny_skupina_index,len(kybliky_povinne_mrize[kyblik_povinny_index])-1):
+                        ""
+                        a=1
+                        #Otestovat jestli zasahuji do dalsi skupiny, nebo to sezerou otazniky mezi - pak musim nastavit spravny offset
+                        #!!!
+                    vysledky_zdola = ziskej_povinne_varianty(kyble_fronta, kybliky_povinne_mrize,pocty_fronta,
+                                                             pocet_index+1,kyblik_povinny_index,kyblik_povinny_skupina_index,
+                                                             kybliky_povinne_mrize[kyblik_povinny_index][kyblik_povinny_skupina_index][0]-offset+pocty_fronta[pocet_index]+1,
+                                                             pocitadla_umisteni)
+                    #ted musim rozsirit vysledky o soucasnost a ulozit
+                    print(f'Vytvorim tuple({pocet_index}:{pocty_fronta[pocet_index]}, )')
+                #umisteni.append([pocet_index,kyblik_povinny_index,kyblik_povinny_skupina_index,True])
+                kybliky_povinne_mrize_copy = copy.copy(kybliky_povinne_mrize)
+                pocty_fronta_copy = copy.copy(pocty_fronta)
+                #vyndam pocet, ktery jsem spotreboval - nejak vyresit offsety
+                print(f'Spotreboval jsem counter {pocty_fronta[pocet_index]} a podskupinu {kyblik_povinny_skupina_index} ve skupine {kyblik_povinny_index} v {kybliky_povinne_mrize_copy[kyblik_povinny_index][kyblik_povinny_skupina_index]}')
+                delete_nth(pocty_fronta_copy,pocet_index)
+                delete_nth(kybliky_povinne_mrize_copy[kyblik_povinny_index],kyblik_povinny_skupina_index)
+                ziskej_povinne_varianty(kyble_fronta, kybliky_povinne_mrize_copy,pocty_fronta_copy)
+            pocet_index += 1
     return return_value
                         
 def nova_metoda(kyble_fronta:list, pocty_fronta:list,indent=0):
@@ -129,8 +158,9 @@ def nova_metoda(kyble_fronta:list, pocty_fronta:list,indent=0):
         if not kyblik_vysledky:
             kyblik_vysledky = [tuple([0,0])]
         kybliky_povinne_mrize.append(kyblik_vysledky)
-                
-    ziskej_povinne_varianty(kyble_fronta,collections.deque(kybliky_povinne_mrize),collections.deque(pocty_fronta))
+    pocitadla_umisteni = [collections.deque() for _ in  range(len(pocty_fronta))]
+    pocitadla_umisteni[-1] = collections.deque(pocty_fronta)
+    ziskej_povinne_varianty(kyble_fronta,collections.deque(kybliky_povinne_mrize),collections.deque(pocty_fronta),0,0,0,0,pocitadla_umisteni)
     
     
                 
@@ -191,6 +221,7 @@ def kyblikova_metoda(radka:str, orig:str):
     start_time = time.time()
             
     print('zkousim kyblikova',orig)
+    print(radka)
     zadani = list(radka.split(' ')[0])
     #optimalizuj_retez_zprava(radka)
     optimalizuj_retez_zleva(radka)
@@ -225,9 +256,9 @@ def vyplnovaci_metoda(radka:str, orig:str):
     print(f'Vysledek: {ret_value} za {elapsed_time} sekund')
     return ret_value
 def kyblikova_metoda_mp(radka:str):
-    nova = rozsir_radek(radka,5)
-    vyplnovaci_metoda(radka,radka)
-    vyplnovaci_metoda(nova,radka)
+    nova = rozsir_radek(radka,1)
+    print(vyplnovaci_metoda(radka,radka))
+    #vyplnovaci_metoda(nova,radka)
     return kyblikova_metoda(nova,radka)
     
     
@@ -295,7 +326,9 @@ radka = '???.???#????.???? 1,5,2,1'
 #sys.exit(1)
 
 
-
+def replace_consecutive_dots(input_string):
+    # Use re.sub to replace any occurrences of one or more dots with a single dot
+    return re.sub(r'\.+', '.', input_string)
 def main():
     
 # Get the name of the Python script
@@ -312,8 +345,8 @@ def main():
             kyblikova_metoda_mp(line)
             
         
-    print(results)
-    print(sum(results))
+    #print(results)
+    #print(sum(results))
     print(f'Part1: {pocitadlo}')
     print(f'Part2: {pocitadlo2}')
 if __name__ == '__main__':
