@@ -11,7 +11,7 @@ def kyble(tup):
     springs = list(map(int,springs.split(',')))
     print(tup)
     line_new = replace_consecutive_dots(pattern)
-    lpatt = line_new.split('.')
+    lpatt = [z for z in line_new.split('.') if z!='']
     return search(lpatt[0],lpatt,1,springs,0)
 def get_rest(arr,arr_i):
     if len(arr)-1>arr_i:
@@ -72,8 +72,8 @@ def main():
         #    results = list(executor.map(kyblikova_metoda_mp, f.readlines()))
         all = 0
         for line in f.readlines():
-            res = kyble(line.strip().split(' '))
-            print(line.strip(),'Pocet kombinace:',res)
+            res = kyble(rozsir_radek(line.strip(),1).split(' '))
+            print(line.strip(),' ',res)
             all+=res
         print('Final:',all)
             
@@ -83,11 +83,6 @@ def main():
     print(f'Part1: {pocitadlo}')
     print(f'Part2: {pocitadlo2}')
 if __name__ == '__main__':
-    print()
-    a = ['aaa','aba']
-    b = len([x for x in a if x.find('b')>=0])
-    print(b)
+    
     main()
-    t = '????'
-    m = re.match(r"[\?#]{2}.?(.*)",t)
-    print(m.groups(),m[1])
+    
